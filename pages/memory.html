@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Notes</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #f8b5d4;
+            --secondary-color: #ffeaa7;
+            --accent-color: #fab1a0;
+            --text-color: #6c5ce7;
+            --bg-color: #fef5f7;
+            --card-bg: #fff5f8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fef5f7 0%, #fff0f5 50%, #ffeef8 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #6c5ce7;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .category-tab.active {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            border-color: var(--primary-color) !important;
+        }
+
+        .icon-btn.selected {
+            border-color: var(--primary-color) !important;
+            background-color: rgba(248, 181, 212, 0.1);
+        }
+
+        .memory-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(-20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        .memory-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(248, 181, 212, 0.2);
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(248, 181, 212, 0.3);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(248, 181, 212, 0.4);
+        }
+
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .heart {
+            position: absolute;
+            color: var(--primary-color);
+            animation: float 6s ease-in-out infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .add-memory-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(248, 181, 212, 0.4);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .add-memory-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(248, 181, 212, 0.5);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            text-align: center;
+            animation: slideUp 0.5s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @media (max-width: 640px) {
+            .memory-card {
+                margin: 10px 0;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-hearts">
+        <i class="fas fa-heart heart" style="top: 10%; left: 10%; animation-delay: 0s;"></i>
+        <i class="fas fa-heart heart" style="top: 20%; left: 80%; animation-delay: 1s;"></i>
+        <i class="fas fa-heart heart" style="top: 60%; left: 20%; animation-delay: 2s;"></i>
+        <i class="fas fa-heart heart" style="top: 80%; left: 70%; animation-delay: 3s;"></i>
+        <i class="fas fa-heart heart" style="top: 40%; left: 50%; animation-delay: 4s;"></i>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="flex items-center justify-between mb-8">
+            <button class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left mr-2"></i>Quay lại
+            </button>
+            <h1 class="text-2xl md:text-3xl font-bold text-center flex-1">
+                <i class="fas fa-book-open mr-2"></i>Memory Notes
+            </h1>
+            <div class="w-20"></div>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Filter Controls -->
+            <div class="flex justify-center mb-6 space-x-4 flex-wrap">
+                <button onclick="sortMemories('newest')" class="filter-btn bg-pink-300 text-white px-4 py-2 rounded-lg hover:bg-pink-400 transition mb-2">
+                    <i class="fas fa-sort-amount-down mr-2"></i>Mới nhất
+                </button>
+                <button onclick="sortMemories('oldest')" class="filter-btn bg-pink-300 text-white px-4 py-2 rounded-lg hover:bg-pink-400 transition mb-2">
+                    <i class="fas fa-sort-amount-up mr-2"></i>Cũ nhất
+                </button>
+                <div class="flex items-center space-x-2 mb-2">
+                    <input type="date" id="startDate" class="px-3 py-2 border rounded-lg">
+                    <span class="text-gray-600">đến</span>
+                    <input type="date" id="endDate" class="px-3 py-2 border rounded-lg">
+                    <button onclick="filterByDateRange()" class="bg-purple-300 text-white px-4 py-2 rounded-lg hover:bg-purple-400 transition">
+                        <i class="fas fa-filter mr-2"></i>Lọc
+                    </button>
+                    <button onclick="clearDateFilter()" class="bg-gray-300 text-white px-4 py-2 rounded-lg hover:bg-gray-400 transition">
+                        <i class="fas fa-times mr-2"></i>Xóa
+                    </button>
+                </div>
+            </div>
+
+            <div id="memoriesContainer" class="space-y-4">
+                <!-- Memories sẽ được load từ Firebase -->
+            </div>
+    </div>
+
+    <button class="add-memory-btn" onclick="showMemoryPrompt()">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Add Memory Modal -->
+    <div id="memoryModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 class="text-2xl font-bold mb-4" style="color: var(--text-color);">
+                <i class="fas fa-heart mr-2"></i>Thêm kỷ niệm mới
+            </h3>
+            <div class="text-left mb-4">
+                <p class="text-lg mb-4">Anh có kỷ niệm đáng nhớ nào muốn lưu lại hem? 🌹</p>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Tiêu đề:</label>
+                    <input type="text" id="memoryTitle" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400" placeholder="Nhập tiêu đề kỷ niệm...">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Nội dung:</label>
+                    <textarea id="memoryContent" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400" rows="4" placeholder="Chia sẻ kỷ niệm của anh..."></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Biểu tượng:</label>
+                    
+                    <!-- Category Tabs -->
+                    <div class="flex gap-1 mb-2 overflow-x-auto">
+                        <button type="button" onclick="showIconCategory('all')" class="category-tab px-3 py-1 text-xs border rounded-full bg-pink-500 text-white" data-category="all">Tất cả</button>
+                        <button type="button" onclick="showIconCategory('love')" class="category-tab px-3 py-1 text-xs border rounded-full border-gray-300" data-category="love">Tình yêu</button>
+                        <button type="button" onclick="showIconCategory('life')" class="category-tab px-3 py-1 text-xs border rounded-full border-gray-300" data-category="life">Cuộc sống</button>
+                        <button type="button" onclick="showIconCategory('activity')" class="category-tab px-3 py-1 text-xs border rounded-full border-gray-300" data-category="activity">Hoạt động</button>
+                        <button type="button" onclick="showIconCategory('place')" class="category-tab px-3 py-1 text-xs border rounded-full border-gray-300" data-category="place">Địa điểm</button>
+                    </div>
+                    
+                    <!-- Icons Grid -->
+                    <div class="grid grid-cols-6 gap-2 max-h-20 overflow-y-auto" id="iconsGrid">
+                        <!-- All icons (default) -->
+                        <button type="button" onclick="selectIcon('heart')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="heart" data-category="love">
+                            <i class="fas fa-heart text-pink-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('coffee')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="coffee" data-category="life">
+                            <i class="fas fa-coffee text-brown-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('moon')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="moon" data-category="love">
+                            <i class="fas fa-moon text-blue-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('gift')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="gift" data-category="love">
+                            <i class="fas fa-gift text-purple-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('home')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="home" data-category="place">
+                            <i class="fas fa-home text-green-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('plane')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="plane" data-category="place">
+                            <i class="fas fa-plane text-blue-400"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('star')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="star" data-category="life">
+                            <i class="fas fa-star text-yellow-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('music')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="music" data-category="activity">
+                            <i class="fas fa-music text-purple-400"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('camera')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="camera" data-category="activity">
+                            <i class="fas fa-camera text-gray-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('flower')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="flower" data-category="love">
+                            <i class="fas fa-spa text-pink-400"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('ring')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="ring" data-category="love">
+                            <i class="fas fa-ring text-pink-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('cake')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="cake" data-category="life">
+                            <i class="fas fa-birthday-cake text-orange-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('book')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="book" data-category="activity">
+                            <i class="fas fa-book text-blue-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('movie')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="movie" data-category="activity">
+                            <i class="fas fa-film text-red-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('game')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="game" data-category="activity">
+                            <i class="fas fa-gamepad text-green-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('food')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="food" data-category="life">
+                            <i class="fas fa-utensils text-orange-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('beach')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="beach" data-category="place">
+                            <i class="fas fa-umbrella-beach text-blue-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('car')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="car" data-category="place">
+                            <i class="fas fa-car text-gray-700"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('phone')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="phone" data-category="life">
+                            <i class="fas fa-phone text-green-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('church')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="church" data-category="place">
+                            <i class="fas fa-church text-gray-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('work')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="work" data-category="life">
+                            <i class="fas fa-briefcase text-gray-800"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('school')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="school" data-category="life">
+                            <i class="fas fa-graduation-cap text-blue-700"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('money')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="money" data-category="life">
+                            <i class="fas fa-money-bill text-green-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('sun')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="sun" data-category="life">
+                            <i class="fas fa-sun text-yellow-400"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('snow')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="snow" data-category="life">
+                            <i class="fas fa-snowflake text-blue-300"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('fire')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="fire" data-category="life">
+                            <i class="fas fa-fire text-red-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('shopping')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="shopping" data-category="activity">
+                            <i class="fas fa-shopping-bag text-purple-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('park')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="park" data-category="place">
+                            <i class="fas fa-tree text-green-700"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('pet')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="pet" data-category="life">
+                            <i class="fas fa-paw text-brown-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('sport')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="sport" data-category="activity">
+                            <i class="fas fa-basketball-ball text-orange-500"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('art')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="art" data-category="activity">
+                            <i class="fas fa-palette text-purple-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('hospital')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="hospital" data-category="life">
+                            <i class="fas fa-hospital text-red-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('trophy')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="trophy" data-category="life">
+                            <i class="fas fa-trophy text-yellow-600"></i>
+                        </button>
+                        <button type="button" onclick="selectIcon('medal')" class="icon-btn p-2 border-2 border-gray-200 rounded-lg hover:border-pink-400 transition-colors" data-icon="medal" data-category="life">
+                            <i class="fas fa-medal text-orange-600"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selectedIcon" value="heart">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">Ngày:</label>
+                    <input type="date" id="memoryDate" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400">
+                </div>
+            </div>
+            <div class="flex justify-center gap-3">
+                <button class="answer-btn" onclick="saveMemory()">Lưu lại</button>
+                <button class="answer-btn" style="background: #ccc;" onclick="closeMemoryModal()">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhZKjY8x3F2Q7rT6mN5p8sL9vW2xR3y4c",
+            authDomain: "anni1-29547.firebaseapp.com",
+            projectId: "anni1-29547",
+            storageBucket: "anni1-29547.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abc123def456ghi789"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function goBack() {
+            window.location.href = 'memories.html';
+        }
+
+        function showIconCategory(category) {
+            // Update tab styles
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.category === category) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Show/hide icons
+            const allIcons = document.querySelectorAll('.icon-btn');
+            allIcons.forEach(icon => {
+                if (category === 'all') {
+                    icon.style.display = 'block';
+                } else {
+                    icon.style.display = icon.dataset.category === category ? 'block' : 'none';
+                }
+            });
+        }
+        
+        function selectIcon(iconName) {
+            // Remove selected class from all buttons
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked button
+            const selectedBtn = document.querySelector(`[data-icon="${iconName}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('selected');
+            }
+            
+            // Update hidden input
+            document.getElementById('selectedIcon').value = iconName;
+        }
+        
+        function showMemoryPrompt() {
+            document.getElementById('memoryModal').classList.add('show');
+            // Set today's date as default
+            document.getElementById('memoryDate').valueAsDate = new Date();
+            // Reset icon selection to heart
+            selectIcon('heart');
+            // Reset category to "all"
+            showIconCategory('all');
+        }
+
+        function closeMemoryModal() {
+            document.getElementById('memoryModal').classList.remove('show');
+            // Clear form
+            document.getElementById('memoryTitle').value = '';
+            document.getElementById('memoryContent').value = '';
+            document.getElementById('memoryDate').value = '';
+        }
+
+        function saveMemory() {
+            const title = document.getElementById('memoryTitle').value.trim();
+            const content = document.getElementById('memoryContent').value.trim();
+            const date = document.getElementById('memoryDate').value;
+            const icon = document.getElementById('selectedIcon').value;
+            
+            if (!title || !content || !date) {
+                alert('Vui lòng điền đầy đủ thông tin!');
+                return;
+            }
+            
+            const memory = {
+                title: title,
+                content: content,
+                date: date,
+                icon: icon,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Lưu vào Firebase
+            db.collection('memories').add(memory)
+                .then((docRef) => {
+                    // Thêm ID vào memory object
+                    memory.id = docRef.id;
+                    
+                    // Add to UI
+                    addMemoryToUI(memory);
+                    
+                    // Close modal
+                    closeMemoryModal();
+                    
+                    // Show success message
+                    showSuccessMessage();
+                })
+                .catch((error) => {
+                    console.error('Error saving memory:', error);
+                    alert('Không thể lưu kỷ niệm. Vui lòng thử lại!');
+                });
+        }
+
+        function deleteMemory(memoryId) {
+            if (confirm('Bạn có chắc chắn muốn xóa vĩnh viễn kỷ niệm này?')) {
+                // Xóa cứng từ Firebase
+                db.collection('memories').doc(memoryId).delete()
+                    .then(() => {
+                        // Xóa khỏi UI
+                        const memoryCard = document.querySelector(`[data-id="${memoryId}"]`);
+                        if (memoryCard) {
+                            memoryCard.style.animation = 'slideOut 0.3s ease-out';
+                            setTimeout(() => {
+                                memoryCard.remove();
+                            }, 300);
+                        }
+                        
+                        showDeleteMessage();
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting memory:', error);
+                        alert('Không thể xóa kỷ niệm. Vui lòng thử lại!');
+                    });
+            }
+        }
+        
+        function showDeleteMessage() {
+            const message = document.createElement('div');
+            message.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.innerHTML = '<i class="fas fa-trash mr-2"></i>Kỷ niệm đã được xóa! 🗑️';
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
+        
+        // Add slide out animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                from { 
+                    opacity: 1; 
+                    transform: translateX(0); 
+                }
+                to { 
+                    opacity: 0; 
+                    transform: translateX(-100%); 
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function getRandomIcon() {
+            const icons = ['fa-star', 'fa-coffee', 'fa-moon', 'fa-gift', 'fa-home', 'fa-plane', 'fa-heart', 'fa-music', 'fa-camera', 'fa-book'];
+            return icons[Math.floor(Math.random() * icons.length)];
+        }
+
+        function addMemoryToUI(memory) {
+            const memoryContainer = document.getElementById('memoriesContainer');
+            const memoryCard = document.createElement('div');
+            memoryCard.className = 'memory-card';
+            memoryCard.style.animation = 'slideIn 0.6s ease-out';
+            memoryCard.dataset.date = memory.date;
+            memoryCard.dataset.id = memory.id;
+            
+            const formattedDate = new Date(memory.date).toLocaleDateString('vi-VN', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            const iconMap = {
+                'heart': 'fa-heart',
+                'coffee': 'fa-coffee',
+                'moon': 'fa-moon',
+                'gift': 'fa-gift',
+                'home': 'fa-home',
+                'plane': 'fa-plane',
+                'star': 'fa-star',
+                'music': 'fa-music',
+                'camera': 'fa-camera',
+                'flower': 'fa-spa',
+                'ring': 'fa-ring',
+                'cake': 'fa-birthday-cake',
+                'book': 'fa-book',
+                'movie': 'fa-film',
+                'game': 'fa-gamepad',
+                'food': 'fa-utensils',
+                'beach': 'fa-umbrella-beach',
+                'car': 'fa-car',
+                'phone': 'fa-phone',
+                'church': 'fa-church',
+                'work': 'fa-briefcase',
+                'school': 'fa-graduation-cap',
+                'money': 'fa-money-bill',
+                'sun': 'fa-sun',
+                'snow': 'fa-snowflake',
+                'fire': 'fa-fire',
+                'shopping': 'fa-shopping-bag',
+                'park': 'fa-tree',
+                'pet': 'fa-paw',
+                'sport': 'fa-basketball-ball',
+                'art': 'fa-palette',
+                'hospital': 'fa-hospital',
+                'trophy': 'fa-trophy',
+                'medal': 'fa-medal'
+            };
+            
+            const iconClass = iconMap[memory.icon] || 'fa-heart';
+            
+            memoryCard.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg mb-2">
+                            <i class="fas ${iconClass} mr-2" style="color: var(--primary-color);"></i>
+                            ${memory.title}
+                        </h3>
+                        <p class="opacity-80">${memory.content}</p>
+                        <div class="text-sm opacity-60 mt-3">
+                            <i class="fas fa-calendar mr-1"></i>${formattedDate}
+                        </div>
+                    </div>
+                    <button onclick="deleteMemory('${memory.id}')" class="ml-4 text-red-500 hover:text-red-700 transition-colors" title="Xóa kỷ niệm">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            memoryContainer.appendChild(memoryCard);
+        }
+
+        // Sorting and filtering functions
+        function sortMemories(order) {
+            const container = document.getElementById('memoriesContainer');
+            const memories = Array.from(container.children);
+            
+            memories.sort((a, b) => {
+                const dateA = new Date(a.dataset.date);
+                const dateB = new Date(b.dataset.date);
+                return order === 'newest' ? dateB - dateA : dateA - dateB;
+            });
+            
+            container.innerHTML = '';
+            memories.forEach(memory => container.appendChild(memory));
+        }
+
+        function filterByTime(period) {
+            const container = document.getElementById('memoriesContainer');
+            const memories = Array.from(container.children);
+            const now = new Date();
+            
+            memories.forEach(memory => {
+                const memoryDate = new Date(memory.dataset.date);
+                let show = false;
+                
+                if (period === 'week') {
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    show = memoryDate >= weekAgo;
+                } else if (period === 'month') {
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    show = memoryDate >= monthAgo;
+                }
+                
+                memory.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function filterByDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Vui lòng chọn cả ngày bắt đầu và ngày kết thúc!');
+                return;
+            }
+            
+            const container = document.getElementById('memoriesContainer');
+            const memories = Array.from(container.children);
+            
+            memories.forEach(memory => {
+                const memoryDate = new Date(memory.dataset.date);
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                // Set time to start/end of day for inclusive comparison
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                
+                const show = memoryDate >= start && memoryDate <= end;
+                memory.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function clearDateFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            
+            const container = document.getElementById('memoriesContainer');
+            const memories = Array.from(container.children);
+            
+            memories.forEach(memory => {
+                memory.style.display = 'block';
+            });
+        }
+
+        // Load memories from Firebase
+        function loadMemoriesFromFirebase() {
+            db.collection('memories').orderBy('createdAt', 'desc').get()
+                .then((querySnapshot) => {
+                    const memoriesContainer = document.getElementById('memoriesContainer');
+                    memoriesContainer.innerHTML = ''; // Clear existing memories
+                    
+                    if (querySnapshot.empty) {
+                        // Hiển thị message nếu không có memories
+                        memoriesContainer.innerHTML = `
+                            <div class="text-center py-8 opacity-60">
+                                <i class="fas fa-heart text-4xl mb-4" style="color: var(--primary-color);"></i>
+                                <p class="text-lg">Chưa có kỷ niệm nào. Hãy thêm kỷ niệm đầu tiên!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const memory = doc.data();
+                        memory.id = doc.id;
+                        addMemoryToUI(memory);
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error loading memories:', error);
+                    const memoriesContainer = document.getElementById('memoriesContainer');
+                    memoriesContainer.innerHTML = `
+                        <div class="text-center py-8 text-red-500">
+                            <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                            <p class="text-lg">Không thể tải kỷ niệm. Vui lòng kiểm tra kết nối!</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Initialize
+        window.onload = function() {
+            loadMemoriesFromFirebase();
+        };
+
+        function showSuccessMessage() {
+            const message = document.createElement('div');
+            message.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.innerHTML = '<i class="fas fa-check mr-2"></i>Kỷ niệm đã được lưu thành công! 💕';
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
+
+        // Load existing memories on page load
+        window.onload = function() {
+            const memories = JSON.parse(localStorage.getItem('anniversaryMemories') || '[]');
+            memories.forEach(memory => {
+                addMemoryToUI(memory);
+            });
+        };
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('memoryModal');
+            if (event.target === modal) {
+                closeMemoryModal();
+            }
+        }
+    </script>
+</body>
+</html>

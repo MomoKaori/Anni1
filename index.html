@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anniversary 1st</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #fef5f7 0%, #fff0f5 50%, #ffeef8 100%);
+            font-family: Arial, sans-serif;
+            color: #6c5ce7;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+        }
+        .heart {
+            color: #f8b5d4;
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .btn {
+            background: linear-gradient(45deg, #f8b5d4, #fab1a0);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+        .play-icon {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 8px solid white;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="heart">❤️</div>
+        <h1>Anniversary 1st</h1>
+        <p>Một hành trình đầy yêu thương</p>
+        <a href="memories.html" class="btn">
+            <span class="play-icon"></span>Nhấn để bắt đầu
+        </a>
+    </div>
+</body>
+</html>

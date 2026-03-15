@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video của chúng ta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #f8b5d4;
+            --secondary-color: #ffeaa7;
+            --accent-color: #fab1a0;
+            --text-color: #6c5ce7;
+            --bg-color: #fef5f7;
+            --card-bg: #fff5f8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fef5f7 0%, #fff0f5 50%, #ffeef8 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #6c5ce7;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .heart {
+            position: absolute;
+            color: var(--primary-color);
+            animation: float 6s ease-in-out infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-modal-content {
+            background: #000;
+            padding: 0;
+            border-radius: 20px;
+            max-width: 95%;
+            max-height: 95vh;
+            position: relative;
+        }
+
+        .video-modal-content video {
+            width: 100%;
+            height: 80vh;
+            border-radius: 20px;
+            object-fit: contain;
+        }
+
+        .close-video-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .close-video-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(248, 181, 212, 0.3);
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .video-thumbnail {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-thumbnail video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(248, 181, 212, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .play-overlay:hover {
+            background: var(--primary-color);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .play-overlay i {
+            color: white;
+            font-size: 24px;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-hearts">
+        <i class="fas fa-heart heart" style="top: 10%; left: 10%; animation-delay: 0s;"></i>
+        <i class="fas fa-heart heart" style="top: 20%; left: 80%; animation-delay: 1s;"></i>
+        <i class="fas fa-heart heart" style="top: 60%; left: 20%; animation-delay: 2s;"></i>
+        <i class="fas fa-heart heart" style="top: 80%; left: 70%; animation-delay: 3s;"></i>
+        <i class="fas fa-heart heart" style="top: 40%; left: 50%; animation-delay: 4s;"></i>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="flex items-center justify-between mb-8">
+            <button class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left mr-2"></i>Quay lại
+            </button>
+            <h1 class="text-2xl md:text-3xl font-bold flex-1 text-center">
+                <i class="fas fa-video mr-2"></i>Video của chúng ta
+            </h1>
+            <div class="w-20"></div>
+        </div>
+
+        <div id="videoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Videos will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="videoPlayerModal" class="modal">
+        <div class="video-modal-content">
+            <button class="close-video-btn" onclick="closeVideoPlayer()">
+                <i class="fas fa-times"></i>
+            </button>
+            <video id="videoPlayer" controls></video>
+        </div>
+    </div>
+
+    <script>
+        // Video data với path cố định
+        let videos = [
+            {
+                id: 1,
+                title: "AI viết code giá rẻ",
+                fileName: "../asset/video/AI viết code giá rẻ - Google Chrome 2026-03-15 18-29-51.mp4",
+                createdAt: new Date('2024-03-15').toISOString()
+            }
+        ];
+
+        function goBack() {
+            window.location.href = '../memories.html';
+        }
+
+        function addVideoToUI(video) {
+            const container = document.getElementById('videoContainer');
+            
+            // Remove empty message if exists
+            const emptyMessage = container.querySelector('.text-center');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+            
+            const videoCard = document.createElement('div');
+            videoCard.className = 'video-card';
+            videoCard.dataset.id = video.id;
+            
+            videoCard.innerHTML = `
+                <div class="video-thumbnail" onclick="playVideo('${video.fileName}')">
+                    <video src="${video.fileName}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;background:linear-gradient(45deg,#f0f0f0,#e0e0e0);\\'><i class=\\'fas fa-video text-4xl\\'></i></div>'"></video>
+                    <div class="play-overlay">
+                        <i class="fas fa-play"></i>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-bold text-lg mb-2">${video.title}</h3>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs opacity-60">${new Date(video.createdAt).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                </div>
+            `;
+            
+            // Add to beginning of container
+            container.insertBefore(videoCard, container.firstChild);
+        }
+
+        function playVideo(fileName) {
+            console.log('=== PLAY LOCAL VIDEO ===');
+            console.log('Trying to play:', fileName);
+            
+            const videoPlayer = document.getElementById('videoPlayer');
+            const modal = document.getElementById('videoPlayerModal');
+            
+            // Reset video modal content
+            const videoModalContent = document.querySelector('.video-modal-content');
+            videoModalContent.innerHTML = `
+                <button class="close-video-btn" onclick="closeVideoPlayer()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <video id="videoPlayer" controls></video>
+            `;
+            
+            // Get video element again
+            const newVideoPlayer = document.getElementById('videoPlayer');
+            
+            // Set video source with local file path
+            newVideoPlayer.src = fileName;
+            
+            // Add event listeners
+            newVideoPlayer.onloadstart = function() {
+                console.log('Started loading video');
+            };
+            
+            newVideoPlayer.onloadeddata = function() {
+                console.log('Video data loaded successfully');
+            };
+            
+            newVideoPlayer.onerror = function(e) {
+                console.error('Video load error:', e);
+                // Show error message
+                const errorContent = document.createElement('div');
+                errorContent.className = 'flex items-center justify-center h-full text-white text-center p-8';
+                errorContent.innerHTML = `
+                    <div>
+                        <i class="fas fa-exclamation-triangle text-6xl mb-4 text-yellow-400"></i>
+                        <h3 class="text-2xl font-bold mb-2">Không thể tải video</h3>
+                        <p class="mb-2">File: ${fileName}</p>
+                        <p class="text-sm opacity-80">Browser không cho phép truy cập file local trực tiếp</p>
+                        <p class="text-xs opacity-60 mt-4">Cần server để stream video</p>
+                    </div>
+                `;
+                videoModalContent.innerHTML = '';
+                videoModalContent.appendChild(errorContent);
+                videoModalContent.querySelector('.close-video-btn').style.display = 'block';
+            };
+            
+            newVideoPlayer.oncanplay = function() {
+                console.log('✅ Video can play!');
+                // Show modal
+                modal.classList.add('show');
+                // Try to autoplay
+                newVideoPlayer.play().catch(e => {
+                    console.log('Auto-play failed, user needs to click play button');
+                });
+            };
+            
+            // Start loading
+            newVideoPlayer.load();
+        }
+
+        function closeVideoPlayer() {
+            const modal = document.getElementById('videoPlayerModal');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            modal.classList.remove('show');
+            videoPlayer.pause();
+            videoPlayer.src = '';
+        }
+
+        function loadVideos() {
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = ''; // Clear existing
+            
+            if (videos.length === 0) {
+                // Hiển thị message nếu không có video
+                container.innerHTML = `
+                    <div class="text-center py-8 opacity-60 col-span-full">
+                        <i class="fas fa-video text-4xl mb-4" style="color: var(--primary-color);"></i>
+                        <p class="text-lg">Chưa có video nào.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            videos.forEach(video => {
+                addVideoToUI(video);
+            });
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            loadVideos();
+        };
+    </script>
+</body>
+</html>
