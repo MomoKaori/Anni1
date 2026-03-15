@@ -719,7 +719,7 @@
                 });
         }
 
-        // Initialize
+        // Initialize - Load from Firebase only
         window.onload = function() {
             loadMemoriesFromFirebase();
         };
@@ -734,14 +734,6 @@
                 message.remove();
             }, 3000);
         }
-
-        // Load existing memories on page load
-        window.onload = function() {
-            const memories = JSON.parse(localStorage.getItem('anniversaryMemories') || '[]');
-            memories.forEach(memory => {
-                addMemoryToUI(memory);
-            });
-        };
 
         // Close modal when clicking outside
         window.onclick = function(event) {
