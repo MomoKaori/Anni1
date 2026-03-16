@@ -222,22 +222,74 @@
                 <i class="fas fa-times"></i>
             </button>
             <video id="videoPlayer" controls></video>
+            
+            <!-- Side Navigation Buttons -->
+            <button onclick="previousVideo()" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all">
+                <i class="fas fa-chevron-left text-xl"></i>
+            </button>
+            <button onclick="nextVideo()" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all">
+                <i class="fas fa-chevron-right text-xl"></i>
+            </button>
         </div>
     </div>
 
     <script>
-        // Video data với path cố định
+        // Video data với path cố định (video có thật)
         let videos = [
             {
-                id: 1,
-                title: "AI viết code giá rẻ",
-                fileName: "../asset/video/AI viết code giá rẻ - Google Chrome 2026-03-15 18-29-51.mp4",
-                createdAt: new Date('2024-03-15').toISOString()
+                id: 2,
+                title: "Học chung",
+                fileName: "../asset/video/Học chung.mp4",
+                createdAt: new Date('2024-03-10').toISOString()
+            },
+            {
+                id: 3,
+                title: "Nhớ anh",
+                fileName: "../asset/video/Nhớ anh.mp4",
+                createdAt: new Date('2024-03-05').toISOString()
+            },
+            {
+                id: 4,
+                title: "Tốt nghiệp rồi",
+                fileName: "../asset/video/Tốt nghiệp rồi.mp4",
+                createdAt: new Date('2024-02-28').toISOString()
+            },
+            {
+                id: 5,
+                title: "Đi chơi AEON lần cuối năm ngoái",
+                fileName: "../asset/video/Đi chơi AEON lần cuối năm ngoái.mp4",
+                createdAt: new Date('2024-02-14').toISOString()
+            },
+            {
+                id: 6,
+                title: "Đi xem phim",
+                fileName: "../asset/video/Đi xem phim.mp4",
+                createdAt: new Date('2024-02-01').toISOString()
+            },
+            {
+                id: 7,
+                title: "Đi ăn thịt nướng",
+                fileName: "../asset/video/Đi ăn thịt nướng.mp4",
+                createdAt: new Date('2024-01-20').toISOString()
+            },
+            {
+                id: 8,
+                title: "Đá thanh tẩy",
+                fileName: "../asset/video/Đá thanh tẩy.mp4",
+                createdAt: new Date('2024-01-10').toISOString()
+            },
+            {
+                id: 9,
+                title: "Đợi",
+                fileName: "../asset/video/Đợi.mp4",
+                createdAt: new Date('2024-01-01').toISOString()
             }
         ];
 
+        let currentVideoIndex = 0;
+
         function goBack() {
-            window.location.href = '../memories.html';
+            window.location.href = 'memories.html';
         }
 
         function addVideoToUI(video) {
@@ -262,9 +314,6 @@
                 </div>
                 <div class="p-4">
                     <h3 class="font-bold text-lg mb-2">${video.title}</h3>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs opacity-60">${new Date(video.createdAt).toLocaleDateString('vi-VN')}</span>
-                    </div>
                 </div>
             `;
             
@@ -276,6 +325,10 @@
             console.log('=== PLAY LOCAL VIDEO ===');
             console.log('Trying to play:', fileName);
             
+            // Find current video index
+            currentVideoIndex = videos.findIndex(video => video.fileName === fileName);
+            console.log('Current video index:', currentVideoIndex);
+            
             const videoPlayer = document.getElementById('videoPlayer');
             const modal = document.getElementById('videoPlayerModal');
             
@@ -286,6 +339,14 @@
                     <i class="fas fa-times"></i>
                 </button>
                 <video id="videoPlayer" controls></video>
+                
+                <!-- Side Navigation Buttons -->
+                <button onclick="previousVideo()" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all">
+                    <i class="fas fa-chevron-left text-xl"></i>
+                </button>
+                <button onclick="nextVideo()" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all">
+                    <i class="fas fa-chevron-right text-xl"></i>
+                </button>
             `;
             
             // Get video element again
@@ -334,6 +395,18 @@
             
             // Start loading
             newVideoPlayer.load();
+        }
+
+        function nextVideo() {
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            console.log('Next video index:', currentVideoIndex);
+            playVideo(videos[currentVideoIndex].fileName);
+        }
+
+        function previousVideo() {
+            currentVideoIndex = (currentVideoIndex - 1 + videos.length) % videos.length;
+            console.log('Previous video index:', currentVideoIndex);
+            playVideo(videos[currentVideoIndex].fileName);
         }
 
         function closeVideoPlayer() {

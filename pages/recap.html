@@ -349,51 +349,12 @@
         <div class="timeline">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Dấu ấn thời gian</h2>
-                <button onclick="showImprintModal()" class="px-3 py-1 bg-pink-500 text-white text-sm rounded-full hover:bg-pink-600 transition-colors">
-                    <i class="fas fa-plus mr-1"></i>Thêm dấu ấn
-                </button>
             </div>
             <div id="imprintsContainer">
                 <!-- Dynamic imprints will load here -->
                 <div class="text-center py-8 opacity-60">
                     <i class="fas fa-clock text-4xl mb-4" style="color: var(--primary-color);"></i>
                     <p class="text-lg">Chưa có dấu ấn nào. Hãy thêm dấu ấn đầu tiên!</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Imprint Modal -->
-        <div id="imprintModal" class="modal">
-            <div class="modal-content" style="max-width: 500px;">
-                <h3 class="text-2xl font-bold mb-4" style="color: var(--text-color);">
-                    <i class="fas fa-clock mr-2"></i>Thêm dấu ấn mới
-                </h3>
-                <div class="text-left mb-4">
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-2">Tiêu đề:</label>
-                        <input type="text" id="imprintTitle" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400" placeholder="Nhập tiêu đề dấu ấn...">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-2">Mô tả:</label>
-                        <textarea id="imprintDescription" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400" rows="3" placeholder="Mô tả chi tiết về dấu ấn..."></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-2">Ngày:</label>
-                        <input type="date" id="imprintDate" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold mb-2">Loại dấu ấn:</label>
-                        <select id="imprintType" class="w-full p-3 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-400">
-                            <option value="milestone">Cột mốc quan trọng</option>
-                            <option value="first">Lần đầu tiên</option>
-                            <option value="special">Đặc biệt</option>
-                            <option value="memory">Kỷ niệm</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-center gap-3">
-                    <button class="answer-btn" onclick="saveImprint()">Lưu lại</button>
-                    <button class="answer-btn" style="background: #ccc;" onclick="closeImprintModal()">Hủy</button>
                 </div>
             </div>
         </div>
@@ -427,62 +388,7 @@
             window.location.href = 'memories.html';
         }
 
-        function showImprintModal() {
-            document.getElementById('imprintModal').classList.add('show');
-            // Set today's date as default
-            document.getElementById('imprintDate').valueAsDate = new Date();
-        }
-
-        function closeImprintModal() {
-            document.getElementById('imprintModal').classList.remove('show');
-            // Clear form
-            document.getElementById('imprintTitle').value = '';
-            document.getElementById('imprintDescription').value = '';
-            document.getElementById('imprintDate').value = '';
-            document.getElementById('imprintType').value = 'milestone';
-        }
-
-        function saveImprint() {
-            const title = document.getElementById('imprintTitle').value.trim();
-            const description = document.getElementById('imprintDescription').value.trim();
-            const date = document.getElementById('imprintDate').value;
-            const type = document.getElementById('imprintType').value;
-            
-            if (!title || !description || !date) {
-                alert('Vui lòng điền đầy đủ thông tin!');
-                return;
-            }
-            
-            const imprint = {
-                title: title,
-                description: description,
-                date: date,
-                type: type,
-                createdAt: new Date().toISOString()
-            };
-            
-            // Lưu vào Firebase collection "imprint"
-            db.collection('imprint').add(imprint)
-                .then((docRef) => {
-                    // Thêm ID vào imprint object
-                    imprint.id = docRef.id;
-                    
-                    // Add to UI
-                    addImprintToUI(imprint);
-                    
-                    // Close modal
-                    closeImprintModal();
-                    
-                    // Show success message
-                    showImprintSuccessMessage();
-                })
-                .catch((error) => {
-                    console.error('Error saving imprint:', error);
-                    alert('Không thể lưu dấu ấn. Vui lòng thử lại!');
-                });
-        }
-
-        function addImprintToUI(imprint) {
+        function addImprintToUI(memory) {
             const container = document.getElementById('imprintsContainer');
             
             // Remove empty message if exists
@@ -493,48 +399,36 @@
             
             const imprintItem = document.createElement('div');
             imprintItem.className = 'timeline-item';
-            imprintItem.dataset.id = imprint.id;
+            imprintItem.dataset.id = memory.id;
             
-            const formattedDate = new Date(imprint.date).toLocaleDateString('vi-VN', {
+            const formattedDate = new Date(memory.date).toLocaleDateString('vi-VN', {
                 day: 'numeric',
                 month: 'numeric',
                 year: 'numeric'
             });
             
-            // Get type label
-            const typeLabels = {
-                'milestone': 'Cột mốc',
-                'first': 'Lần đầu',
-                'special': 'Đặc biệt',
-                'memory': 'Kỷ niệm'
-            };
-            
-            const typeLabel = typeLabels[imprint.type] || 'Kỷ niệm';
-            
             imprintItem.innerHTML = `
                 <div class="timeline-dot"></div>
                 <div class="flex-1">
-                    <div class="font-semibold">${imprint.title}</div>
-                    <div class="text-sm opacity-70">${formattedDate} - ${typeLabel}</div>
-                    <div class="text-sm opacity-60 mt-1">${imprint.description}</div>
+                    <div class="font-semibold">${memory.title}</div>
+                    <div class="text-sm opacity-70">${formattedDate}</div>
                 </div>
-                <button onclick="deleteImprint('${imprint.id}')" class="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Xóa dấu ấn">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
             `;
             
             // Insert in chronological order
             const allItems = container.querySelectorAll('.timeline-item');
             let inserted = false;
             
-            for (let i = 0; i < allItems.length; i++) {
-                const itemDate = allItems[i].querySelector('.text-sm').textContent.split(' - ')[0];
-                if (new Date(imprint.date) < new Date(itemDate)) {
-                    container.insertBefore(imprintItem, allItems[i]);
+            allItems.forEach(item => {
+                const itemDate = new Date(item.dataset.date);
+                const memoryDate = new Date(memory.date);
+                
+                if (memoryDate < itemDate) {
+                    container.insertBefore(imprintItem, item);
                     inserted = true;
-                    break;
+                    return;
                 }
-            }
+            });
             
             if (!inserted) {
                 container.appendChild(imprintItem);
@@ -542,35 +436,35 @@
         }
 
         function loadImprintsFromFirebase() {
-            db.collection('imprint').orderBy('date', 'asc').get()
+            db.collection('memories').orderBy('date', 'asc').get()
                 .then((querySnapshot) => {
                     const container = document.getElementById('imprintsContainer');
                     container.innerHTML = ''; // Clear existing
                     
                     if (querySnapshot.empty) {
-                        // Hiển thị message nếu không có imprints
+                        // Hiển thị message nếu không có memories
                         container.innerHTML = `
                             <div class="text-center py-8 opacity-60">
-                                <i class="fas fa-clock text-4xl mb-4" style="color: var(--primary-color);"></i>
-                                <p class="text-lg">Chưa có dấu ấn nào. Hãy thêm dấu ấn đầu tiên!</p>
+                                <i class="fas fa-heart text-4xl mb-4" style="color: var(--primary-color);"></i>
+                                <p class="text-lg">Chưa có kỷ niệm nào. Hãy thêm kỷ niệm đầu tiên!</p>
                             </div>
                         `;
                         return;
                     }
                     
                     querySnapshot.forEach((doc) => {
-                        const imprint = doc.data();
-                        imprint.id = doc.id;
-                        addImprintToUI(imprint);
+                        const memory = doc.data();
+                        memory.id = doc.id;
+                        addImprintToUI(memory);
                     });
                 })
                 .catch((error) => {
-                    console.error('Error loading imprints:', error);
+                    console.error('Error loading memories:', error);
                     const container = document.getElementById('imprintsContainer');
                     container.innerHTML = `
                         <div class="text-center py-8 text-red-500">
                             <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
-                            <p class="text-lg">Không thể tải dấu ấn. Vui lòng kiểm tra kết nối!</p>
+                            <p class="text-lg">Không thể tải kỷ niệm. Vui lòng kiểm tra kết nối!</p>
                         </div>
                     `;
                 });

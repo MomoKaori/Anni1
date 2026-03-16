@@ -228,6 +228,28 @@
             font-size: 24px;
             margin-left: 3px;
         }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -248,6 +270,61 @@
                 <i class="fas fa-music mr-2"></i>Nhạc chung của chúng ta
             </h1>
             <div class="w-20"></div>
+        </div>
+
+        <!-- Note Section -->
+        <div class="text-center mb-4">
+            <div class="inline-block">
+                <p class="text-sm opacity-70 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <span class="cursor-pointer hover:text-pink-600 transition-colors" onclick="showNote()">
+                        Bấm vào chữ để xem lời nhắn đặc biệt 💌
+                    </span>
+                </p>
+                <p class="text-xs opacity-60">
+                    <i class="fas fa-play-circle mr-1"></i>
+                    Bấm vào video để nghe nhạc 🎵
+                </p>
+            </div>
+        </div>
+
+        <!-- Note Modal -->
+        <div id="noteModal" class="modal">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold" style="color: var(--text-color);">
+                        <i class="fas fa-envelope-open-heart mr-2"></i>Lời nhắn từ trái tim
+                    </h3>
+                    <button class="close-video-btn" onclick="closeNote()" style="position: static; background: var(--primary-color);">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center space-y-4">
+                    <div class="text-6xl">💕</div>
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">
+Gửi em,
+
+Mỗi bài nhạc trong danh sách này đều là một kỷ niệm đẹp của chúng ta. 
+Từ những giai điệu đầu tiên chúng ta cùng nghe, đến những bản tình ca 
+làm chúng ta xao xuyến.
+
+Nhạc không chỉ là âm thanh, mà là nơi lưu giữ những khoảnh khắc, 
+những cảm xúc và những lời yêu thương chưa nói hết.
+
+Cảm ơn em đã cùng anh viết nên bản nhạc cuộc đời này. 
+Tình yêu của em là giai điệu đẹp nhất trong cuộc đời anh.
+
+Yêu em rất nhiều! 💖
+
+Anh
+                    </p>
+                    <div class="text-sm opacity-60">
+                        <i class="fas fa-heart mr-1"></i>
+                        Mãi yêu em
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="text-center mb-8">
@@ -340,6 +417,14 @@
             window.location.href = 'memories.html';
         }
 
+        function showNote() {
+            document.getElementById('noteModal').classList.add('show');
+        }
+
+        function closeNote() {
+            document.getElementById('noteModal').classList.remove('show');
+        }
+
         function showMusicModal() {
             document.getElementById('musicModal').classList.add('show');
         }
@@ -420,11 +505,16 @@
                 <div class="p-4">
                     <h3 class="font-bold text-lg mb-2 cursor-pointer hover:text-pink-600 transition-colors" onclick="showMusicDetail('${music.id}')">${music.title}</h3>
                     ${truncatedDescription ? `<p class="text-sm opacity-70 mb-3 cursor-pointer hover:text-pink-600 transition-colors" onclick="showMusicDetail('${music.id}')">${truncatedDescription}</p>` : ''}
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs opacity-60">${new Date(music.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <div class="flex justify-end">
+                        <button onclick="deleteMusic('${music.id}')" class="text-red-500 hover:text-red-700 transition-colors" title="Xóa video">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
+            
+            // Add animation
+            musicCard.style.animation = 'slideIn 0.6s ease-out';
             
             // Add to beginning of container
             container.insertBefore(musicCard, container.firstChild);
@@ -665,6 +755,41 @@
 
         function closeMusicDetail() {
             document.getElementById('musicDetailModal').classList.remove('show');
+        }
+
+        function deleteMusic(musicId) {
+            if (confirm('Bạn có chắc chắn muốn xóa video này?')) {
+                // Xóa khỏi Firebase
+                db.collection('music').doc(musicId).delete()
+                    .then(() => {
+                        // Xóa khỏi UI
+                        const musicCard = document.querySelector(`[data-id="${musicId}"]`);
+                        if (musicCard) {
+                            musicCard.style.animation = 'slideOut 0.3s ease-out';
+                            setTimeout(() => {
+                                musicCard.remove();
+                            }, 300);
+                        }
+                        
+                        // Show success message
+                        showDeleteMessage();
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting music:', error);
+                        alert('Không thể xóa video. Vui lòng thử lại!');
+                    });
+            }
+        }
+
+        function showDeleteMessage() {
+            const message = document.createElement('div');
+            message.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.innerHTML = '<i class="fas fa-trash mr-2"></i>Video đã được xóa! 🗑️';
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
         }
 
         function playVideo(url) {

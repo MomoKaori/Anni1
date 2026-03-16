@@ -367,6 +367,24 @@
         </div>
     </div>
 
+    <!-- Memory Detail Modal -->
+    <div id="memoryDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-2xl font-bold" style="color: var(--text-color);">
+                    <i class="fas fa-book-open mr-2"></i>Chi tiết kỷ niệm
+                </h3>
+                <button class="close-video-btn" onclick="closeMemoryDetail()" style="position: static; background: var(--primary-color);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="memoryDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -438,6 +456,16 @@
             document.getElementById('memoryTitle').value = '';
             document.getElementById('memoryContent').value = '';
             document.getElementById('memoryDate').value = '';
+            
+            // Reset modal title and button
+            document.querySelector('#memoryModal h3').innerHTML = '<i class="fas fa-book-open mr-2"></i>Thêm kỷ niệm mới';
+            document.querySelector('#memoryModal .answer-btn').innerHTML = '<i class="fas fa-save mr-2"></i>Lưu lại';
+            
+            // Clear editing state
+            window.editingMemoryId = null;
+            
+            // Reset icon selection
+            showIconCategory('all');
         }
 
         function saveMemory() {
@@ -459,24 +487,181 @@
                 createdAt: new Date().toISOString()
             };
             
-            // Lưu vào Firebase
-            db.collection('memories').add(memory)
-                .then((docRef) => {
-                    // Thêm ID vào memory object
-                    memory.id = docRef.id;
-                    
-                    // Add to UI
-                    addMemoryToUI(memory);
-                    
-                    // Close modal
-                    closeMemoryModal();
-                    
-                    // Show success message
-                    showSuccessMessage();
+            // Check if editing or adding new
+            if (window.editingMemoryId) {
+                // Update existing memory
+                db.collection('memories').doc(window.editingMemoryId).update(memory)
+                    .then(() => {
+                        // Update UI
+                        const memoryCard = document.querySelector(`[data-id="${window.editingMemoryId}"]`);
+                        if (memoryCard) {
+                            memoryCard.remove();
+                        }
+                        memory.id = window.editingMemoryId;
+                        addMemoryToUI(memory);
+                        
+                        // Close modal
+                        closeMemoryModal();
+                        
+                        // Show success message
+                        showSuccessMessage();
+                        
+                        // Clear editing state
+                        window.editingMemoryId = null;
+                    })
+                    .catch((error) => {
+                        console.error('Error updating memory:', error);
+                        alert('Không thể cập nhật kỷ niệm. Vui lòng thử lại!');
+                    });
+            } else {
+                // Add new memory
+                db.collection('memories').add(memory)
+                    .then((docRef) => {
+                        // Thêm ID vào memory object
+                        memory.id = docRef.id;
+                        
+                        // Add to UI
+                        addMemoryToUI(memory);
+                        
+                        // Close modal
+                        closeMemoryModal();
+                        
+                        // Show success message
+                        showSuccessMessage();
+                    })
+                    .catch((error) => {
+                        console.error('Error saving memory:', error);
+                        alert('Không thể lưu kỷ niệm. Vui lòng thử lại!');
+                    });
+            }
+        }
+
+        function showMemoryDetail(memoryId) {
+            // Find memory data from Firebase
+            db.collection('memories').doc(memoryId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const memory = doc.data();
+                        memory.id = doc.id;
+                        
+                        const detailContent = document.getElementById('memoryDetailContent');
+                        
+                        const iconMap = {
+                            'heart': 'fa-heart',
+                            'coffee': 'fa-coffee',
+                            'moon': 'fa-moon',
+                            'gift': 'fa-gift',
+                            'home': 'fa-home',
+                            'plane': 'fa-plane',
+                            'star': 'fa-star',
+                            'music': 'fa-music',
+                            'camera': 'fa-camera',
+                            'flower': 'fa-spa',
+                            'ring': 'fa-ring',
+                            'cake': 'fa-birthday-cake',
+                            'book': 'fa-book',
+                            'movie': 'fa-film',
+                            'game': 'fa-gamepad',
+                            'food': 'fa-utensils',
+                            'beach': 'fa-umbrella-beach',
+                            'car': 'fa-car',
+                            'phone': 'fa-phone',
+                            'church': 'fa-church',
+                            'work': 'fa-briefcase',
+                            'school': 'fa-graduation-cap',
+                            'money': 'fa-money-bill',
+                            'sun': 'fa-sun',
+                            'snow': 'fa-snowflake',
+                            'fire': 'fa-fire',
+                            'shopping': 'fa-shopping-bag',
+                            'park': 'fa-tree',
+                            'pet': 'fa-paw',
+                            'sport': 'fa-basketball-ball',
+                            'art': 'fa-palette',
+                            'hospital': 'fa-hospital',
+                            'trophy': 'fa-trophy',
+                            'medal': 'fa-medal'
+                        };
+                        
+                        const iconClass = iconMap[memory.icon] || 'fa-heart';
+                        const formattedDate = new Date(memory.date).toLocaleDateString('vi-VN', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        
+                        detailContent.innerHTML = `
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="font-bold text-lg mb-2">
+                                        <i class="fas ${iconClass} mr-2" style="color: var(--primary-color);"></i>
+                                        ${memory.title}
+                                    </h4>
+                                    <p class="text-sm opacity-60">${formattedDate}</p>
+                                </div>
+                                
+                                <div>
+                                    <h5 class="font-semibold mb-2">Nội dung:</h5>
+                                    <p class="text-gray-700 whitespace-pre-wrap">${memory.content}</p>
+                                </div>
+                                
+                                <div class="flex gap-3">
+                                    <button onclick="deleteMemory('${memory.id}')" class="answer-btn" style="background: #dc3545;">
+                                        <i class="fas fa-trash mr-2"></i>Xóa
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.getElementById('memoryDetailModal').classList.add('show');
+                    } else {
+                        console.log('Memory not found');
+                    }
                 })
                 .catch((error) => {
-                    console.error('Error saving memory:', error);
-                    alert('Không thể lưu kỷ niệm. Vui lòng thử lại!');
+                    console.error('Error getting memory:', error);
+                });
+        }
+
+        function closeMemoryDetail() {
+            document.getElementById('memoryDetailModal').classList.remove('show');
+        }
+
+        function editMemory(memoryId) {
+            // Find memory data from Firebase
+            db.collection('memories').doc(memoryId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const memory = doc.data();
+                        memory.id = doc.id;
+                        
+                        // Fill form with existing data
+                        document.getElementById('memoryTitle').value = memory.title;
+                        document.getElementById('memoryContent').value = memory.content;
+                        document.getElementById('memoryDate').value = memory.date;
+                        
+                        // Set icon
+                        if (memory.icon) {
+                            selectIcon(memory.icon);
+                        }
+                        
+                        // Store editing ID
+                        window.editingMemoryId = memoryId;
+                        
+                        // Change modal title
+                        document.querySelector('#memoryModal h3').innerHTML = '<i class="fas fa-edit mr-2"></i>Sửa kỷ niệm';
+                        
+                        // Change save button text
+                        document.querySelector('#memoryModal .answer-btn').innerHTML = '<i class="fas fa-save mr-2"></i>Cập nhật';
+                        
+                        // Show modal
+                        document.getElementById('memoryModal').classList.add('show');
+                    } else {
+                        console.log('Memory not found');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error getting memory:', error);
                 });
         }
 
@@ -494,6 +679,10 @@
                             }, 300);
                         }
                         
+                        // Close detail modal if open
+                        closeMemoryDetail();
+                        
+                        // Show delete message
                         showDeleteMessage();
                     })
                     .catch((error) => {
@@ -588,21 +777,30 @@
             
             const iconClass = iconMap[memory.icon] || 'fa-heart';
             
+            // Truncate content to 2 lines
+            const truncatedContent = memory.content ? 
+                (memory.content.length > 100 ? memory.content.substring(0, 100) + '...' : memory.content) : '';
+            
             memoryCard.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <h3 class="font-bold text-lg mb-2">
+                    <div class="flex-1 cursor-pointer" onclick="showMemoryDetail('${memory.id}')">
+                        <h3 class="font-bold text-lg mb-2 hover:text-pink-600 transition-colors">
                             <i class="fas ${iconClass} mr-2" style="color: var(--primary-color);"></i>
                             ${memory.title}
                         </h3>
-                        <p class="opacity-80">${memory.content}</p>
+                        ${truncatedContent ? `<p class="opacity-80 cursor-pointer hover:text-pink-600 transition-colors">${truncatedContent}</p>` : ''}
                         <div class="text-sm opacity-60 mt-3">
                             <i class="fas fa-calendar mr-1"></i>${formattedDate}
                         </div>
                     </div>
-                    <button onclick="deleteMemory('${memory.id}')" class="ml-4 text-red-500 hover:text-red-700 transition-colors" title="Xóa kỷ niệm">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="editMemory('${memory.id}')" class="text-blue-500 hover:text-blue-700 transition-colors" title="Sửa kỷ niệm">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteMemory('${memory.id}')" class="text-red-500 hover:text-red-700 transition-colors" title="Xóa kỷ niệm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             
@@ -685,7 +883,7 @@
 
         // Load memories from Firebase
         function loadMemoriesFromFirebase() {
-            db.collection('memories').orderBy('createdAt', 'desc').get()
+            db.collection('memories').orderBy('createdAt', 'asc').get()
                 .then((querySnapshot) => {
                     const memoriesContainer = document.getElementById('memoriesContainer');
                     memoriesContainer.innerHTML = ''; // Clear existing memories
