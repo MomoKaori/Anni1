@@ -273,7 +273,7 @@
         </div>
 
         <!-- Note Section -->
-        <div class="text-center mb-4">
+        <div class="text-left mb-4">
             <div class="inline-block">
                 <p class="text-sm opacity-70 mb-2">
                     <i class="fas fa-info-circle mr-1"></i>
@@ -303,7 +303,7 @@
                 <div class="text-center space-y-4">
                     <div class="text-6xl">💕</div>
                     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">
-Gửi em,
+Gửi anh - Hùng,
 
 Mỗi bài nhạc trong danh sách này đều là một kỷ niệm đẹp của chúng ta. 
 Từ những giai điệu đầu tiên chúng ta cùng nghe, đến những bản tình ca 
@@ -312,16 +312,16 @@ làm chúng ta xao xuyến.
 Nhạc không chỉ là âm thanh, mà là nơi lưu giữ những khoảnh khắc, 
 những cảm xúc và những lời yêu thương chưa nói hết.
 
-Cảm ơn em đã cùng anh viết nên bản nhạc cuộc đời này. 
-Tình yêu của em là giai điệu đẹp nhất trong cuộc đời anh.
+Cảm ơn anh đã cùng em viết nên bản nhạc cuộc đời này. 
+Tình yêu của em là giai điệu đẹp nhất trong cuộc đời em.
 
-Yêu em rất nhiều! 💖
+Yêu anh rất nhiều! 💖
 
-Anh
+Hương
                     </p>
                     <div class="text-sm opacity-60">
                         <i class="fas fa-heart mr-1"></i>
-                        Mãi yêu em
+                        Mãi yêu anh
                     </div>
                 </div>
             </div>
@@ -935,6 +935,20 @@ Anh
         window.onload = function() {
             loadMusicFromFirebase();
         };
+
+        // Auto unlock video khi quay lại
+        window.addEventListener('beforeunload', function() {
+            try {
+                // Unlock video trong localStorage
+                const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+                if (!unlockedFeatures.includes('video')) {
+                    unlockedFeatures.push('video');
+                    localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+                }
+            } catch (e) {
+                console.log('Không thể unlock video:', e);
+            }
+        });
     </script>
 </body>
 </html>

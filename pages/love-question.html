@@ -339,9 +339,8 @@
                 return;
             }
 
-            // Hide form and show loading
+            // Hide form
             document.getElementById('reasonForm').classList.remove('active');
-            document.getElementById('loading').classList.add('active');
 
             // Save no answer with reason
             saveAnswer('no', reason);
@@ -361,21 +360,17 @@
                 .then((docRef) => {
                     console.log('Answer saved with ID:', docRef.id);
                     
-                    // Simulate processing time
-                    setTimeout(() => {
-                        showResult(answer, reason);
-                    }, 2000);
+                    // Show result immediately
+                    showResult(answer, reason);
                 })
                 .catch((error) => {
                     console.error('Error saving answer:', error);
                     alert('Không thể lưu câu trả lời. Vui lòng thử lại!');
-                    document.getElementById('loading').classList.remove('active');
-                    document.getElementById('questionButtons').style.display = 'flex';
+                    document.getElementById('reasonForm').classList.add('active');
                 });
         }
 
         function showResult(answer, reason) {
-            document.getElementById('loading').classList.remove('active');
             const resultDiv = document.getElementById('resultMessage');
             
             if (answer === 'yes') {
@@ -385,7 +380,7 @@
                         <i class="fas fa-heart text-4xl text-green-500 mb-3"></i>
                         <h3 class="text-xl font-bold text-green-700 mb-2">Tuyệt vời! 💕</h3>
                         <p class="text-gray-700 mb-4">
-                            Anh cũng muốn cùng em viết tiếp câu chuyện tình yêu này!<br>
+                            Em cũng muốn cùng anh viết tiếp câu chuyện tình yêu này!<br>
                             Cảm ơn anh vì đã chọn em. Yêu anh rất nhiều! ❤️
                         </p>
                         <button class="btn-submit" onclick="goBack()">

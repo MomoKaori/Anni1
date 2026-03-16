@@ -442,6 +442,20 @@
         window.onload = function() {
             loadVideos();
         };
+
+        // Auto unlock recap khi quay lại
+        window.addEventListener('beforeunload', function() {
+            try {
+                // Unlock recap trong localStorage
+                const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+                if (!unlockedFeatures.includes('recap')) {
+                    unlockedFeatures.push('recap');
+                    localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+                }
+            } catch (e) {
+                console.log('Không thể unlock recap:', e);
+            }
+        });
     </script>
 </body>
 </html>

@@ -532,6 +532,29 @@
             loadImprintsFromFirebase();
         };
 
+        // Auto unlock thư khi quay lại
+        window.addEventListener('beforeunload', function() {
+            try {
+                // Kiểm tra tất cả features đã unlock
+                const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+                const allFeatures = ['memory', 'music', 'video', 'recap'];
+                
+                // Nếu recap chưa được unlock, unlock nó
+                if (!unlockedFeatures.includes('recap')) {
+                    unlockedFeatures.push('recap');
+                    localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+                }
+                
+                // Kích hoạt notification nếu tất cả đã unlocked
+                if (allFeatures.every(feature => unlockedFeatures.includes(feature))) {
+                    // Đánh dấu là có thư mới
+                    localStorage.setItem('allFeaturesUnlocked', 'true');
+                }
+            } catch (e) {
+                console.log('Không thể unlock thư:', e);
+            }
+        });
+
         // Add parallax effect on scroll
         window.addEventListener('scroll', function() {
             const scrolled = window.pageYOffset;

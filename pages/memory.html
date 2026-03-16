@@ -188,6 +188,59 @@
             <div class="w-20"></div>
         </div>
 
+        <!-- Note Section -->
+        <div class="text-left mb-6">
+            <div class="inline-block">
+                <p class="text-sm opacity-70 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <span class="cursor-pointer hover:text-pink-600 transition-colors" onclick="showNote()">
+                        Bấm vào đây để xem lời nhắn đặc biệt 💌
+                    </span>
+                </p>
+                <p class="text-xs opacity-60">
+                    <i class="fas fa-edit mr-1"></i>
+                    Bấm vào kỷ niệm để xem chi tiết hoặc chỉnh sửa ✏️
+                </p>
+            </div>
+        </div>
+
+        <!-- Note Modal -->
+        <div id="noteModal" class="modal">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold" style="color: var(--text-color);">
+                        <i class="fas fa-envelope-open-heart mr-2"></i>Lời nhắn từ trái tim
+                    </h3>
+                    <button class="close-video-btn" onclick="closeNote()" style="position: static; background: var(--primary-color);">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center space-y-4">
+                    <div class="text-6xl">💕</div>
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">
+Gửi anh,
+
+Mỗi kỷ niệm trong đây đều là một mảnh ghép nhỏ 
+câu chuyện tình yêu của chúng ta. Những lời nhắn 
+những khoảnh khắc, những cảm xúc chân thành.
+
+Cảm ơn anh đã cùng em tạo nên những kỷ niệm đẹp. 
+Mỗi dòng chữ đều chứa đựng tình yêu và sự trân trọng 
+em dành cho anh.
+
+Yêu anh rất nhiều! 💖
+
+Em
+                    </p>
+                    <div class="text-sm opacity-60">
+                        <i class="fas fa-heart mr-1"></i>
+                        Mãi yêu anh
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="space-y-4">
             <!-- Filter Controls -->
             <div class="flex justify-center mb-6 space-x-4 flex-wrap">
@@ -402,6 +455,14 @@
 
         function goBack() {
             window.location.href = 'memories.html';
+        }
+
+        function showNote() {
+            document.getElementById('noteModal').classList.add('show');
+        }
+
+        function closeNote() {
+            document.getElementById('noteModal').classList.remove('show');
         }
 
         function showIconCategory(category) {
@@ -921,6 +982,20 @@
         window.onload = function() {
             loadMemoriesFromFirebase();
         };
+
+        // Auto unlock music khi quay lại
+        window.addEventListener('beforeunload', function() {
+            try {
+                // Unlock music trong localStorage
+                const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+                if (!unlockedFeatures.includes('music')) {
+                    unlockedFeatures.push('music');
+                    localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+                }
+            } catch (e) {
+                console.log('Không thể unlock music:', e);
+            }
+        });
 
         function showSuccessMessage() {
             const message = document.createElement('div');

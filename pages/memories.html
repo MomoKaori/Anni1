@@ -53,10 +53,36 @@
             animation: unlock 0.6s ease;
         }
 
-        @keyframes unlock {
-            0% { transform: scale(0.8); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
+        .unlock-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-btn.locked {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .feature-btn.locked:hover {
+            transform: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .feature-btn.next-unlock {
+            border: 2px solid var(--primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(248, 181, 212, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(248, 181, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 181, 212, 0); }
         }
 
         .modal {
@@ -159,10 +185,11 @@
             
             <!-- Notification Icon -->
             <div class="fixed top-4 right-4" id="notificationIcon">
-                <button onclick="openLoveQuestion()" class="relative bg-pink-500 text-white p-3 rounded-full shadow-lg hover:bg-pink-600 transition-all transform hover:scale-110">
-                    <i class="fas fa-envelope text-xl"></i>
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse" id="notificationBadge">1</span>
+                <button onclick="openLoveQuestion()" class="relative bg-gray-400 text-white p-3 rounded-full shadow-lg cursor-not-allowed" id="notificationButton" disabled>
+                    <i class="fas fa-envelope-open text-xl"></i>
+                    <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" id="notificationBadge">0</span>
                 </button>
+                <div class="text-xs text-center mt-1 text-gray-500" id="notificationText">Hộp thư trống</div>
             </div>
             
             <!-- Buttons -->
@@ -171,24 +198,36 @@
                     <i class="fas fa-book-open text-2xl mb-2"></i>
                     <div class="font-semibold">Memory notes</div>
                     <div class="text-sm opacity-70 mt-1">Những ghi nhớ nhỏ</div>
+                    <div class="unlock-status" id="memoryUnlock">
+                        <i class="fas fa-lock text-xs text-gray-400 hidden" id="memoryLock"></i>
+                    </div>
                 </button>
 
                 <button class="feature-btn" id="musicBtn" onclick="openFeature('music')">
                     <i class="fas fa-music text-2xl mb-2"></i>
                     <div class="font-semibold">Music</div>
                     <div class="text-sm opacity-70 mt-1">Nhạc chung của chúng ta</div>
+                    <div class="unlock-status" id="musicUnlock">
+                        <i class="fas fa-lock text-xs text-gray-400" id="musicLock"></i>
+                    </div>
                 </button>
 
                 <button class="feature-btn" id="videoBtn" onclick="openFeature('video')">
                     <i class="fas fa-video text-2xl mb-2"></i>
                     <div class="font-semibold">Video</div>
                     <div class="text-sm opacity-70 mt-1">Khoảnh khắc sống động</div>
+                    <div class="unlock-status" id="videoUnlock">
+                        <i class="fas fa-lock text-xs text-gray-400" id="videoLock"></i>
+                    </div>
                 </button>
 
                 <button class="feature-btn" id="recapBtn" onclick="openFeature('recap')">
                     <i class="fas fa-images text-2xl mb-2"></i>
                     <div class="font-semibold">Recap</div>
                     <div class="text-sm opacity-70 mt-1">Tổng hợp kỷ niệm</div>
+                    <div class="unlock-status" id="recapUnlock">
+                        <i class="fas fa-lock text-xs text-gray-400" id="recapLock"></i>
+                    </div>
                 </button>
             </div>
         </div>
@@ -212,6 +251,13 @@
 
     <script>
         function openFeature(feature) {
+            // Check if feature is unlocked
+            if (!isFeatureUnlocked(feature)) {
+                showUnlockMessage(feature);
+                return;
+            }
+
+            // Navigate to feature if unlocked
             if (feature === 'memory') {
                 window.location.href = 'memory.html';
             } else if (feature === 'music') {
@@ -223,26 +269,243 @@
             }
         }
 
+        function isFeatureUnlocked(feature) {
+            const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+            return unlockedFeatures.includes(feature);
+        }
+
+        function unlockNextFeature() {
+            const features = ['memory', 'music', 'video', 'recap'];
+            const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+            
+            // Find next feature to unlock
+            for (let i = 0; i < features.length; i++) {
+                if (!unlockedFeatures.includes(features[i])) {
+                    unlockFeature(features[i]);
+                    return features[i]; // Return unlocked feature
+                }
+            }
+            
+            // All features unlocked
+            return null;
+        }
+
+        function unlockFeature(feature) {
+            const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+            
+            if (!unlockedFeatures.includes(feature)) {
+                unlockedFeatures.push(feature);
+                localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+                updateUnlockUI(feature);
+                showUnlockSuccess(feature);
+                
+                // Check if all features unlocked
+                if (unlockedFeatures.length === 4) {
+                    activateNotification();
+                }
+            }
+        }
+
+        function updateUnlockUI(feature) {
+            const lockIcon = document.getElementById(feature + 'Lock');
+            const button = document.getElementById(feature + 'Btn');
+            
+            if (lockIcon && button) {
+                // Remove lock icon
+                lockIcon.classList.add('hidden');
+                button.classList.remove('locked');
+                button.classList.add('unlocked');
+                
+                // Remove animation after it completes
+                setTimeout(() => {
+                    button.classList.remove('unlocked');
+                }, 600);
+            }
+            
+            // Update next feature highlighting
+            updateNextFeatureHighlight();
+        }
+
+        function updateNextFeatureHighlight() {
+            const features = ['memory', 'music', 'video', 'recap'];
+            const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+            
+            // Remove all highlights
+            features.forEach(f => {
+                const btn = document.getElementById(f + 'Btn');
+                if (btn) btn.classList.remove('next-unlock');
+            });
+            
+            // Highlight next feature
+            for (let i = 0; i < features.length; i++) {
+                if (!unlockedFeatures.includes(features[i])) {
+                    const nextBtn = document.getElementById(features[i] + 'Btn');
+                    if (nextBtn) nextBtn.classList.add('next-unlock');
+                    break;
+                }
+            }
+        }
+
+        function showUnlockMessage(feature) {
+            const messages = {
+                'memory': 'Memory notes sẽ được mở khóa khi anh khám phá thêm về chúng ta!',
+                'music': 'Nhạc của chúng ta sẽ được mở khóa khi có giai điệu mới!',
+                'video': 'Video sẽ được mở khóa khi có khoảnh khắc đặc biệt!',
+                'recap': 'Tổng kết sẽ được mở khóa khi đã có đủ kỷ niệm!'
+            };
+            
+            const modal = document.getElementById('finalModal');
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="mb-6">
+                        <i class="fas fa-lock text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4" style="color: var(--text);">Chưa mở khóa 🔒</h3>
+                    <p class="text-lg mb-6">${messages[feature]}</p>
+                    <button class="answer-btn" onclick="closeModal()">OK</button>
+                </div>
+            `;
+            modal.classList.add('show');
+        }
+
+        function showUnlockSuccess(feature) {
+            const featureNames = {
+                'memory': 'Memory notes',
+                'music': 'Music',
+                'video': 'Video',
+                'recap': 'Recap'
+            };
+            
+            const message = document.createElement('div');
+            message.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.innerHTML = `
+                <i class="fas fa-unlock mr-2"></i>
+                ${featureNames[feature]} đã được mở khóa! 🎉
+            `;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.remove();
+            }, 3000);
+        }
+
+        function activateNotification() {
+            const button = document.getElementById('notificationButton');
+            const badge = document.getElementById('notificationBadge');
+            const text = document.getElementById('notificationText');
+            
+            // Enable button
+            button.disabled = false;
+            button.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            button.classList.add('bg-pink-500', 'hover:bg-pink-600', 'transition-all', 'transform', 'hover:scale-110');
+            
+            // Update icon
+            button.querySelector('i').classList.remove('fa-envelope-open');
+            button.querySelector('i').classList.add('fa-envelope');
+            
+            // Update badge
+            badge.textContent = '1';
+            badge.classList.remove('bg-gray-500');
+            badge.classList.add('bg-red-500', 'animate-pulse');
+            
+            // Update text
+            text.textContent = 'Có thư mới!';
+            text.classList.remove('text-gray-500');
+            text.classList.add('text-pink-600', 'font-semibold');
+        }
+
+        function closeModal() {
+            document.getElementById('finalModal').classList.remove('show');
+        }
+
+        function initializeUnlockStatus() {
+            const features = ['memory', 'music', 'video', 'recap'];
+            const unlockedFeatures = JSON.parse(localStorage.getItem('unlockedFeatures') || '[]');
+            
+            // Memory notes luôn unlocked
+            if (!unlockedFeatures.includes('memory')) {
+                unlockedFeatures.push('memory');
+                localStorage.setItem('unlockedFeatures', JSON.stringify(unlockedFeatures));
+            }
+            
+            features.forEach(feature => {
+                if (unlockedFeatures.includes(feature)) {
+                    updateUnlockUI(feature);
+                } else {
+                    const button = document.getElementById(feature + 'Btn');
+                    if (button) {
+                        button.classList.add('locked');
+                    }
+                }
+            });
+            
+            // Kiểm tra nếu tất cả features đã unlocked để kích hoạt notification
+            const allFeaturesUnlocked = localStorage.getItem('allFeaturesUnlocked') === 'true';
+            if (allFeaturesUnlocked || unlockedFeatures.length === 4) {
+                activateNotification();
+            }
+            
+            // Highlight next feature
+            updateNextFeatureHighlight();
+        }
+
+        // Admin function để unlock features (có thể gọi từ console)
+        function unlockNextFeatureManually() {
+            const unlocked = unlockNextFeature();
+            if (unlocked) {
+                console.log(`✅ ${unlocked} đã được mở khóa!`);
+            } else {
+                console.log('🎉 Tất cả features đã được mở khóa!');
+            }
+        }
+
+        // Keyboard shortcut để unlock (Ctrl+Shift+U)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'U') {
+                e.preventDefault();
+                unlockNextFeatureManually();
+            }
+        });
+
+        // Auto unlock khi vào các trang (gọi từ các trang khác)
+        function unlockFeatureFromPage(featureName) {
+            if (featureName === 'memory') {
+                // Memory luôn unlocked
+                return;
+            }
+            
+            const features = ['memory', 'music', 'video', 'recap'];
+            const currentIndex = features.indexOf(featureName);
+            
+            // Unlock tất cả features đến và bao gồm feature hiện tại
+            for (let i = 0; i <= currentIndex; i++) {
+                const feature = features[i];
+                if (!isFeatureUnlocked(feature)) {
+                    unlockFeature(feature);
+                    console.log(`🔓 ${feature} đã được mở khóa từ trang!`);
+                }
+            }
+        }
+
         function openLoveQuestion() {
             window.location.href = 'love-question.html';
         }
 
         function checkNotificationStatus() {
-            const isAnswered = localStorage.getItem('loveQuestionAnswered');
-            const badge = document.getElementById('notificationBadge');
-            
-            if (isAnswered === 'true') {
-                // Hide badge if already answered
-                badge.style.display = 'none';
-            } else {
-                // Show badge if not answered
-                badge.style.display = 'flex';
-            }
+            // Notification status is now handled by unlock system
+            // This function can be removed or simplified
         }
 
         // Check notification status on page load
         window.onload = function() {
-            checkNotificationStatus();
+            initializeUnlockStatus();
+            
+            // Refresh lại UI khi quay lại từ các trang khác
+            window.addEventListener('focus', function() {
+                setTimeout(() => {
+                    initializeUnlockStatus();
+                }, 100);
+            });
         };
 
         function answer(answer) {
