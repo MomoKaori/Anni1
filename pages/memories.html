@@ -157,6 +157,14 @@
                 <p class="text-lg opacity-80">Cùng nhau nhìn lại hành trình yêu thương</p>
             </div>
             
+            <!-- Notification Icon -->
+            <div class="fixed top-4 right-4" id="notificationIcon">
+                <button onclick="openLoveQuestion()" class="relative bg-pink-500 text-white p-3 rounded-full shadow-lg hover:bg-pink-600 transition-all transform hover:scale-110">
+                    <i class="fas fa-envelope text-xl"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse" id="notificationBadge">1</span>
+                </button>
+            </div>
+            
             <!-- Buttons -->
             <div class="flex flex-col gap-6 justify-center items-center max-w-xs mx-auto w-full">
                 <button class="feature-btn" id="memoryBtn" onclick="openFeature('memory')">
@@ -214,6 +222,28 @@
                 window.location.href = 'recap.html';
             }
         }
+
+        function openLoveQuestion() {
+            window.location.href = 'love-question.html';
+        }
+
+        function checkNotificationStatus() {
+            const isAnswered = localStorage.getItem('loveQuestionAnswered');
+            const badge = document.getElementById('notificationBadge');
+            
+            if (isAnswered === 'true') {
+                // Hide badge if already answered
+                badge.style.display = 'none';
+            } else {
+                // Show badge if not answered
+                badge.style.display = 'flex';
+            }
+        }
+
+        // Check notification status on page load
+        window.onload = function() {
+            checkNotificationStatus();
+        };
 
         function answer(answer) {
             const modal = document.getElementById('finalModal');
